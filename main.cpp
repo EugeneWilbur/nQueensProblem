@@ -1,4 +1,8 @@
 #include <iostream>
+#include <list>
+#include <queue>
+
+
 
 class Square{
 public:
@@ -67,8 +71,10 @@ public:
     //init n*n board of 2d Squares by
     Board(){
         squares = new Square*[n];
+        queens = new int*[n];
         for(int i = 0; i < n; i++){
             squares[i] = new Square[n];
+            queens[i] = new int[2] {-1, -1};
         }
 
         //let all squares know there x and y position
@@ -77,6 +83,7 @@ public:
                 squares[i][j].setPosition(i,j);
             }
         }
+        nQueens = 0;
     }
 
     ~Board(){
@@ -111,19 +118,80 @@ public:
         }
     }
 
+    int getnQueens(){
+        return nQueens;
+    }
+
+    Board* createChild(Board* parent){
+
+        Board *temp = new Board();
+
+        for(int i = 0; i < n; i++){
+            temp->children[i] = nullptr;
+        }
+
+        //copies the queens the parent has into the child
+        for(int i = 0; i < 4; i++){
+            if(parent->queens[i][0] > 0 && parent->queens[i][1] > 0) {
+                temp->squares[parent->queens[i][0]][parent->queens[i][1]].placeQueen();
+            }
+        }
+        return temp;
+    }
+
+    void addChild(Board *parent){
+        for(int i = 0; i < n; i++){
+            if(parent->children[i] != nullptr){
+                parent->children[i] = createChild(parent);
+            }
+        }
+    }
+
+    void queenTest(){
+        for(int i = 0; i < n; i++){
+            for(int j = 0; j < 2; j++){
+                std::cout << queens[i][j] << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    void addQueen(int x, int y){
+        this->squares[x][y].placeQueen();
+        queens[nQueens][0] = x;
+        queens[nQueens][1] = y;
+        nQueens++;
+    }
+
 private:
     int n = 4;
+    int nQueens;
+    int **queens;
     Square **squares;
+    Board *children[];
 };
 
 
 int main() {
-    Board board;
-    board[1][2].placeQueen();
-    board.printBoard();
+    Board *root = nullptr;
 
-    board[0][0].placeQueen();
-    board[1][2].takeQueen();
-    board.printBoard();
+
+    Board test;
+    root = &test;
+
+
+    root->addQueen(0,0);
+    root->addQueen(1, 2);
+    root->printBoard();
+    root->queenTest();
+
+    root->addChild(root);
+
+    root->printBoard();
+
     return 0;
 }
+
+
+
+
