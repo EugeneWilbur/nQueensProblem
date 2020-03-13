@@ -72,6 +72,7 @@ public:
     Board(){
         squares = new Square*[n];
         queens = new int*[n];
+        children = nullptr;
         for(int i = 0; i < n; i++){
             squares[i] = new Square[n];
             queens[i] = new int[2] {-1, -1};
@@ -84,6 +85,7 @@ public:
             }
         }
         nQueens = 0;
+        nChildren = 0;
     }
 
     ~Board(){
@@ -122,28 +124,23 @@ public:
         return nQueens;
     }
 
-    Board* createChild(Board* parent){
-
-        Board *temp = new Board();
-
-        for(int i = 0; i < n; i++){
-            temp->children[i] = nullptr;
-        }
+    Board* createChild(){
+        auto *temp = new Board();
 
         //copies the queens the parent has into the child
-        for(int i = 0; i < 4; i++){
-            if(parent->queens[i][0] > 0 && parent->queens[i][1] > 0) {
-                temp->squares[parent->queens[i][0]][parent->queens[i][1]].placeQueen();
+
+        for(int i = 0; i < nQueens; i++){
+            if(this->queens[i][0] >= 0 && this->queens[i][1] >= 0) {
+                temp->squares[this->queens[i][0]][this->queens[i][1]].placeQueen();
             }
         }
         return temp;
     }
 
-    void addChild(Board *parent){
-        for(int i = 0; i < n; i++){
-            if(parent->children[i] != nullptr){
-                parent->children[i] = createChild(parent);
-            }
+    void addChild(){
+        if(children == nullptr) {
+            children = createChild();
+            nChildren++;
         }
     }
 
@@ -163,31 +160,33 @@ public:
         nQueens++;
     }
 
+    // TODO dont leave this here
+    // TODO add multiple children
+    Board *children;
+
 private:
     int n = 4;
-    int nQueens;
+    int nQueens, nChildren;
     int **queens;
     Square **squares;
-    Board *children[];
 };
 
 
 int main() {
-    Board *root = nullptr;
+    Board root;
+    root.createChild();
+
+    root.addQueen(0,0);
 
 
-    Board test;
-    root = &test;
+    root.printBoard();
 
+    root.addChild();
 
-    root->addQueen(0,0);
-    root->addQueen(1, 2);
-    root->printBoard();
-    root->queenTest();
+    root.children->addQueen(1, 2);
 
-    root->addChild(root);
-
-    root->printBoard();
+    root.children->printBoard();
+    root.printBoard();
 
     return 0;
 }
