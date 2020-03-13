@@ -3,8 +3,8 @@
 class Square{
 public:
 
-    Square(): queen{false} {};
-    explicit Square(bool queenc): queen{queenc} {};
+    Square(): x{0}, y{0}, queen{false} {};
+    explicit Square(int xc, int yc, bool queenc): x{xc}, y{yc}, queen{queenc} {};
 
     void placeQueen(){
         this->queen = true;
@@ -18,7 +18,21 @@ public:
         return queen;
     }
 
+    void setPosition(int xc, int yc){
+        this->x = xc;
+        this->y = yc;
+    }
+
+    int getX(){
+        return x;
+    }
+
+    int getY(){
+        return y;
+    }
+
 private:
+    int x, y;
     bool queen;
 };
 
@@ -48,6 +62,7 @@ public:
             }
             std::cout << std::endl;
         }
+        std::cout << std::endl;
     }
 
     //init n*n board of 2d Squares by
@@ -55,6 +70,12 @@ public:
         square = new Square*[n];
         for(int i = 0; i < n; i++){
             square[i] = new Square[n];
+        }
+
+        for(int i = 0; i < n; i++){
+            for(int j = 0; j < n; j++){
+                square[i][j].setPosition(i,j);
+            }
         }
     }
 
@@ -88,7 +109,6 @@ private:
     Square **square;
 
 };
-
 
 
 int main() {
