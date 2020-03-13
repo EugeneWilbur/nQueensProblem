@@ -38,7 +38,6 @@ private:
 
 class Board{
 public:
-
     int getSize(){
         return n;
     }
@@ -54,7 +53,7 @@ public:
             for(int j = 0; j < n + 1; j++){
                 if(j == 0){
                     std::cout << i << " ";
-                } else if(square[i][j - 1].hasQueen()) {
+                } else if(squares[i][j - 1].hasQueen()) {
                     std::cout << "  " << "Q" << "  ";
                 } else {
                     std::cout << "  .  ";
@@ -67,16 +66,24 @@ public:
 
     //init n*n board of 2d Squares by
     Board(){
-        square = new Square*[n];
+        squares = new Square*[n];
         for(int i = 0; i < n; i++){
-            square[i] = new Square[n];
+            squares[i] = new Square[n];
         }
 
+        //let all squares know there x and y position
         for(int i = 0; i < n; i++){
             for(int j = 0; j < n; j++){
-                square[i][j].setPosition(i,j);
+                squares[i][j].setPosition(i,j);
             }
         }
+    }
+
+    ~Board(){
+        for(int i = 0; i < n; i++){
+            delete [] squares[i];
+        }
+        delete [] squares;
     }
 
     //this class is just for 2 dimensional [][] operator overload (2nd [])
@@ -98,16 +105,15 @@ public:
         //num is value in the first set of [];
         if (num > n || num < 0){
             std::cout << "Index out of bounds." << std::endl;
-            return operatorClass(square[0]);
+            return operatorClass(squares[0]);
         } else {
-            return operatorClass(square[num]);
+            return operatorClass(squares[num]);
         }
     }
 
 private:
     int n = 4;
-    Square **square;
-
+    Square **squares;
 };
 
 
