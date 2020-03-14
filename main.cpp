@@ -2,44 +2,6 @@
 #include <list>
 #include <queue>
 
-
-//class for each square in the board. Keeps track of its position and whether it has a queen or not.
-class Square{
-public:
-
-    Square(): x{0}, y{0}, queen{false} {};
-    explicit Square(int xc, int yc, bool queenc): x{xc}, y{yc}, queen{queenc} {};
-
-    void placeQueen(){
-        this->queen = true;
-    }
-
-    void takeQueen(){
-        this->queen = false;
-    }
-
-    bool hasQueen(){
-        return queen;
-    }
-
-    void setPosition(int xc, int yc){
-        this->x = xc;
-        this->y = yc;
-    }
-
-    int getX(){
-        return x;
-    }
-
-    int getY(){
-        return y;
-    }
-
-private:
-    int x, y;
-    bool queen;
-};
-
 class Board{
 public:
     int getSize(){
@@ -57,7 +19,7 @@ public:
             for(int j = 0; j < n + 1; j++){
                 if(j == 0){
                     std::cout << i << " ";
-                } else if(squares[i][j - 1].hasQueen()) {
+                } else if(queens[i][0] == i && queens[i][1] == j-1) {
                     std::cout << "  " << "Q" << "  ";
                 } else {
                     std::cout << "  .  ";
@@ -69,20 +31,13 @@ public:
     }
 
     //init n*n board of 2d Squares by
-    Board(){
-        squares = new Square*[n];
+    explicit Board(int N){
+        n = N;
+        children = new Board*[n];
         queens = new int*[n];
         for(int i = 0; i < n; i++){
-            squares[i] = new Square[n];
             queens[i] = new int[2] {-1, -1};
             children[i] = nullptr;
-        }
-
-        //let all squares know there x and y position
-        for(int i = 0; i < n; i++){
-            for(int j = 0; j < n; j++){
-                squares[i][j].setPosition(i,j);
-            }
         }
         nQueens = 0;
         nChildren = 0;
@@ -90,35 +45,10 @@ public:
     }
 
     ~Board(){
-        for(int i = 0; i < n; i++){
-            delete [] squares[i];
+        for(int i = 0; i < 2; i++){
+            delete queens;
         }
-        delete [] squares;
-    }
-
-    //this class is just for 2 dimensional [][] operator overload (2nd [])
-    class operatorClass{
-    public:
-        explicit operatorClass(Square *squares): squares(squares){}
-
-        Square& operator[](int index){
-            //index is the value in the send set of [];
-            // e.g. board[nums][index];
-            return squares[index];
-        }
-    private:
-        Square * squares;
-    };
-
-    //outside operator overload (first [])
-    operatorClass operator [](int num){
-        //num is value in the first set of [];
-        if (num > n || num < 0){
-            std::cout << "Index out of bounds." << std::endl;
-            return operatorClass(squares[0]);
-        } else {
-            return operatorClass(squares[num]);
-        }
+        delete [] queens;
     }
 
     int getnQueens(){
@@ -126,13 +56,12 @@ public:
     }
 
     Board* createChild(){
-        auto *temp = new Board();
+        auto *temp = new Board(n);
 
         //copies the queens the parent has into the child
 
         for(int i = 0; i < nQueens; i++){
             if(this->queens[i][0] >= 0 && this->queens[i][1] >= 0) {
-                temp->squares[this->queens[i][0]][this->queens[i][1]].placeQueen();
                 temp->queens[i][0] = this->queens[i][0];
                 temp->queens[i][1] = this->queens[i][1];
                 temp->nQueens = this->nQueens;
@@ -149,7 +78,6 @@ public:
     }
 
     void addQueen(int x, int y){
-        squares[x][y].placeQueen();
         queens[nQueens][0] = x;
         queens[nQueens][1] = y;
         nQueens++;
@@ -165,37 +93,34 @@ public:
 
     //recursively sets up each child to have n number of children. This is repeated n times.
     Board* treeSetUp(int depth = 0){
+        //TODO make this not bother if the path is in the wrong direction.
         if(depth == n) {
             //returns the 'youngest' generation of children
             return this;
-
         }
         for(int i = 0; i < n; i++){
             this->addChild();
             this->addQueenToChild(i, depth, i);
             //calls this function again for each child
-            this->children[i] = this->children[i]->treeSetUp(depth+1);
+            this->children[i]->treeSetUp(depth+1);
         }
         //returns the root of the whole data struct.
         return this;
     }
 
-    int isGoal(){
-        if(this->getnQueens() != n){
-            return 1;
-        } else {
-            for(int i = 0; i < n; i++){
-                for(int j = i; j < n; j++){
-                    //if qi[x coordinate] == qj[x coordinate] return false;
-                    //if qi[y coordinate] == qj[y coordinate] return false;
-                    //if qi[x]-qj[x] == qi[y] - qj[y] they are on the same diagonal, return false;
-                    if((queens[i][0] == queens[j][0] || queens[i][1] == queens[j][1] || abs(queens[i][0] - queens[j][0]) == abs(queens[i][1] - queens[j][1])) && i != j) {
-                        return 0;
-                    }
+    bool isGoal(){
+
+        for(int i = 0; i < nQueens; i++){
+            for(int j = i; j < nQueens; j++){
+                //if qi[x coordinate] == qj[x coordinate] return false;
+                //if qi[y coordinate] == qj[y coordinate] return false;
+                //if qi[x]-qj[x] == qi[y] - qj[y] they are on the same diagonal, return false;
+                if((queens[i][0] == queens[j][0] || queens[i][1] == queens[j][1] || abs(queens[i][0] - queens[j][0]) == abs(queens[i][1] - queens[j][1])) && i != j) {
+                    return false;
                 }
             }
         }
-        return 2;
+        return true;
     }
 
     int BFS(Board *root){
@@ -203,10 +128,6 @@ public:
         std::queue<Board*> frontier;
         Board *current, *temp;
 
-        if(root->isGoal() == 2){
-            root->printBoard();
-            solutions++;
-        }
         frontier.push(root);
         while(!frontier.empty()){
             current = frontier.front();
@@ -214,12 +135,11 @@ public:
             current->visited = true;
             for(int i = 0; i < nChildren; i++){
                 if(!current->children[i]->visited){
-                    isGoalAns = current->children[i]->isGoal();
-                    if(isGoalAns == 2){
-                        current->children[i]->printBoard();
-                        solutions++;
-                    } else if (isGoalAns == 1){
+                    if (current->children[i]->nQueens != n){
                         frontier.push(current->children[i]);
+                    } else if(current->children[i]->isGoal()){
+                        //current->children[i]->printBoard();
+                        solutions++;
                     }
                 }
             }
@@ -228,25 +148,22 @@ public:
     }
 
 private:
-    int n = 6;
+    int n;
     int nQueens, nChildren; // number of queens and children in the current board state.
     int **queens; //position of each queen.
-    Square **squares; //grid of squares to make up the board
-    Board *children[6];
+    Board **children;
     bool visited;
 };
 
 
 
 int main() {
+    for(int i = 4; i < 8; i++){
+        auto *root = new Board(i);
+        root = root->treeSetUp();
 
-    //TODO see if you even need the squares class
-    auto *root = new Board;
-
-    root = root->treeSetUp();
-
-
-    std::cout << "Number of solutions for n = " << root->getSize() << " is: " << root->BFS(root) << std::endl;
+        std::cout << "Number of solutions for n = " << root->getSize() << " is: " << root->BFS(root) << std::endl;
+    }
     return 0;
 }
 
