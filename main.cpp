@@ -72,10 +72,10 @@ public:
     Board(){
         squares = new Square*[n];
         queens = new int*[n];
-        children = nullptr;
         for(int i = 0; i < n; i++){
             squares[i] = new Square[n];
             queens[i] = new int[2] {-1, -1};
+            children[i] = nullptr;
         }
 
         //let all squares know there x and y position
@@ -86,6 +86,7 @@ public:
         }
         nQueens = 0;
         nChildren = 0;
+        parent = nullptr;
     }
 
     ~Board(){
@@ -124,22 +125,9 @@ public:
         return nQueens;
     }
 
-    Board* createChild(){
-        auto *temp = new Board();
-
-        //copies the queens the parent has into the child
-
-        for(int i = 0; i < nQueens; i++){
-            if(this->queens[i][0] >= 0 && this->queens[i][1] >= 0) {
-                temp->squares[this->queens[i][0]][this->queens[i][1]].placeQueen();
-            }
-        }
-        return temp;
-    }
-
     void addChild(){
-        if(children == nullptr) {
-            children = createChild();
+        if(children[nChildren] == nullptr && nChildren <= n) {
+            children[nChildren] = createChild();
             nChildren++;
         }
     }
@@ -154,43 +142,98 @@ public:
     }
 
     void addQueen(int x, int y){
-        this->squares[x][y].placeQueen();
+        squares[x][y].placeQueen();
         queens[nQueens][0] = x;
         queens[nQueens][1] = y;
         nQueens++;
     }
 
+    Board *backGen(){
+        return parent;
+    }
+
+    void addQueenToChild(int child, int queenX, int queenY){
+        if(child <= nChildren){
+            children[child]->addQueen(queenX, queenY);
+        } else {
+            std::cout << "No child at index: " << child << std::endl;
+        }
+    }
+
+    Board *nextGen(int i){
+        if(i <= nChildren){
+            return children[i];
+        }
+        else {
+            std::cout << "No child at that index" << std::endl;
+            return this;
+        }
+    }
+
+    void printChild(){
+        for(int i = 0; i < nChildren; i++){
+            children[i]->printBoard();
+        }
+    }
     // TODO dont leave this here
-    // TODO add multiple children
-    Board *children;
+    Board *children[4];
 
 private:
     int n = 4;
     int nQueens, nChildren;
     int **queens;
     Square **squares;
+
+    Board *parent;
+
+    Board* createChild(){
+        auto *temp = new Board();
+
+        //copies the queens the parent has into the child
+
+        for(int i = 0; i < nQueens; i++){
+            if(this->queens[i][0] >= 0 && this->queens[i][1] >= 0) {
+                temp->squares[this->queens[i][0]][this->queens[i][1]].placeQueen();
+                temp->queens[i][0] = this->queens[i][0];
+                temp->queens[i][1] = this->queens[i][1];
+                temp->nQueens = this->nQueens;
+                temp->parent = this;
+            }
+        }
+        return temp;
+    }
 };
 
 
+Board* treeSetUp(Board *current, int depth = 0);
+
 int main() {
-    Board root;
-    root.createChild();
+    auto *root = new Board;
+    auto *token = new Board;
 
-    root.addQueen(0,0);
+    root = treeSetUp(root);
 
-
-    root.printBoard();
-
-    root.addChild();
-
-    root.children->addQueen(1, 2);
-
-    root.children->printBoard();
-    root.printBoard();
+    token = root;
+    for(int i = 0; i < root->getSize(); i++){
+        token->printChild();
+        token = token->nextGen(3);
+    }
 
     return 0;
 }
 
+Board* treeSetUp(Board *current, int depth){
+    if(depth == current->getSize()){
+        return current;
+
+    }
+    for(int i = 0; i < current->getSize(); i++){
+        current->addChild();
+        current->addQueenToChild(i, depth, i);
+        current->children[i] = treeSetUp(current->nextGen(i), depth+1);
+    }
+    return current;
+}
 
 
 
