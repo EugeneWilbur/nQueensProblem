@@ -3,7 +3,7 @@
 #include <queue>
 
 
-
+//class for each square in the board. Keeps track of its position and whether it has a queen or not.
 class Square{
 public:
 
@@ -175,17 +175,56 @@ public:
             children[i]->printBoard();
         }
     }
-    // TODO dont leave this here
-    Board *children[4];
+
+    int **getQueensPosition(){
+        return queens;
+    }
+
+    //recursively sets up each child to have n number of children. This is repeated n times.
+    Board* treeSetUp(int depth = 0){
+        if(depth == n) {
+            //returns the 'youngest' generation of children
+            return this;
+
+        }
+        for(int i = 0; i < n; i++){
+            this->addChild();
+            this->addQueenToChild(i, depth, i);
+            //calls this function again for each child
+            this->children[i] = this->children[i]->treeSetUp(depth+1);
+        }
+        //returns the root of the whole data struct.
+        return this;
+    }
+
+    bool isGoal(){
+        if(this->getnQueens() != n){
+            return false;
+        } else {
+            for(int i = 0; i < n; i++){
+                for(int j = i; j < n; j++){
+                    //if qi[x coordinate] == qj[x coordinate] return false;
+                    //if qi[y coordinate] == qj[y coordinate] return false;
+                    //if qi[x]-qj[x] == qi[y] - qj[y] they are on the same diagonal, return false;
+                    if((queens[i][0] == queens[j][0] || queens[i][1] == queens[j][1] || abs(queens[i][0] - queens[j][0]) == abs(queens[i][1] - queens[j][1])) && i != j) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
 
 private:
     int n = 4;
-    int nQueens, nChildren;
-    int **queens;
-    Square **squares;
-
-    Board *parent;
-
+    int nQueens, nChildren; // number of queens and children in the current board state.
+    int **queens; //position of each queen.
+    Square **squares; //grid of squares to make up the board
+    Board *parent; //parent of each // TODO "parent" might be unneccassary
+    Board *children[4];
+    //made this private as i want "add child()" to call this function. I dont want
+    //this function being called on its own.
+    // TODO see if you can make this public
     Board* createChild(){
         auto *temp = new Board();
 
@@ -205,35 +244,48 @@ private:
 };
 
 
-Board* treeSetUp(Board *current, int depth = 0);
+int BFS(Board *root); //returns number of soltuions.
+
 
 int main() {
+
+    //TODO see if you even need the squares class
     auto *root = new Board;
     auto *token = new Board;
 
-    root = treeSetUp(root);
+    root = root->treeSetUp();
 
     token = root;
+    /*
     for(int i = 0; i < root->getSize(); i++){
         token->printChild();
         token = token->nextGen(3);
-    }
+    }*/
+
+    token = token->nextGen(1);
+    token = token->nextGen(3);
+    token = token->nextGen(0);
+    std::cout << "1 = true, 0 = false." << std::endl;
+    std::cout << token->isGoal() << std::endl;
+    token->printBoard();
+
+    token = token->nextGen(2);
+    std::cout << token->isGoal() << std::endl;
+    token->printBoard();
+
 
     return 0;
 }
 
-Board* treeSetUp(Board *current, int depth){
-    if(depth == current->getSize()){
-        return current;
 
-    }
-    for(int i = 0; i < current->getSize(); i++){
-        current->addChild();
-        current->addQueenToChild(i, depth, i);
-        current->children[i] = treeSetUp(current->nextGen(i), depth+1);
-    }
-    return current;
+
+int BFS(Board *root){
+    //TODO
+    return 0;
 }
+
+
+
 
 
 
