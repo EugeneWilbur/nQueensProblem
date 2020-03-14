@@ -48,7 +48,7 @@ public:
 
     //prints current board state (for debugging and visualisation mostly).
     void printBoard(){
-        std:: cout << "    ";
+        std::cout << "\n    ";
         for(int i = 0; i < n; i++){
             std::cout << i << "    ";
         }
@@ -86,7 +86,7 @@ public:
         }
         nQueens = 0;
         nChildren = 0;
-        parent = nullptr;
+        visited = false;
     }
 
     ~Board(){
@@ -125,19 +125,26 @@ public:
         return nQueens;
     }
 
+    Board* createChild(){
+        auto *temp = new Board();
+
+        //copies the queens the parent has into the child
+
+        for(int i = 0; i < nQueens; i++){
+            if(this->queens[i][0] >= 0 && this->queens[i][1] >= 0) {
+                temp->squares[this->queens[i][0]][this->queens[i][1]].placeQueen();
+                temp->queens[i][0] = this->queens[i][0];
+                temp->queens[i][1] = this->queens[i][1];
+                temp->nQueens = this->nQueens;
+            }
+        }
+        return temp;
+    }
+
     void addChild(){
         if(children[nChildren] == nullptr && nChildren <= n) {
             children[nChildren] = createChild();
             nChildren++;
-        }
-    }
-
-    void queenTest(){
-        for(int i = 0; i < n; i++){
-            for(int j = 0; j < 2; j++){
-                std::cout << queens[i][j] << " ";
-            }
-            std::cout << std::endl;
         }
     }
 
@@ -148,36 +155,12 @@ public:
         nQueens++;
     }
 
-    Board *backGen(){
-        return parent;
-    }
-
     void addQueenToChild(int child, int queenX, int queenY){
         if(child <= nChildren){
             children[child]->addQueen(queenX, queenY);
         } else {
             std::cout << "No child at index: " << child << std::endl;
         }
-    }
-
-    Board *nextGen(int i){
-        if(i <= nChildren){
-            return children[i];
-        }
-        else {
-            std::cout << "No child at that index" << std::endl;
-            return this;
-        }
-    }
-
-    void printChild(){
-        for(int i = 0; i < nChildren; i++){
-            children[i]->printBoard();
-        }
-    }
-
-    int **getQueensPosition(){
-        return queens;
     }
 
     //recursively sets up each child to have n number of children. This is repeated n times.
@@ -197,9 +180,9 @@ public:
         return this;
     }
 
-    bool isGoal(){
+    int isGoal(){
         if(this->getnQueens() != n){
-            return false;
+            return 1;
         } else {
             for(int i = 0; i < n; i++){
                 for(int j = i; j < n; j++){
@@ -207,82 +190,66 @@ public:
                     //if qi[y coordinate] == qj[y coordinate] return false;
                     //if qi[x]-qj[x] == qi[y] - qj[y] they are on the same diagonal, return false;
                     if((queens[i][0] == queens[j][0] || queens[i][1] == queens[j][1] || abs(queens[i][0] - queens[j][0]) == abs(queens[i][1] - queens[j][1])) && i != j) {
-                        return false;
+                        return 0;
                     }
                 }
             }
         }
-        return true;
+        return 2;
+    }
+
+    int BFS(Board *root){
+        int solutions = 0, isGoalAns;
+        std::queue<Board*> frontier;
+        Board *current, *temp;
+
+        if(root->isGoal() == 2){
+            root->printBoard();
+            solutions++;
+        }
+        frontier.push(root);
+        while(!frontier.empty()){
+            current = frontier.front();
+            frontier.pop();
+            current->visited = true;
+            for(int i = 0; i < nChildren; i++){
+                if(!current->children[i]->visited){
+                    isGoalAns = current->children[i]->isGoal();
+                    if(isGoalAns == 2){
+                        current->children[i]->printBoard();
+                        solutions++;
+                    } else if (isGoalAns == 1){
+                        frontier.push(current->children[i]);
+                    }
+                }
+            }
+        }
+        return solutions;
     }
 
 private:
-    int n = 4;
+    int n = 6;
     int nQueens, nChildren; // number of queens and children in the current board state.
     int **queens; //position of each queen.
     Square **squares; //grid of squares to make up the board
-    Board *parent; //parent of each // TODO "parent" might be unneccassary
-    Board *children[4];
-    //made this private as i want "add child()" to call this function. I dont want
-    //this function being called on its own.
-    // TODO see if you can make this public
-    Board* createChild(){
-        auto *temp = new Board();
-
-        //copies the queens the parent has into the child
-
-        for(int i = 0; i < nQueens; i++){
-            if(this->queens[i][0] >= 0 && this->queens[i][1] >= 0) {
-                temp->squares[this->queens[i][0]][this->queens[i][1]].placeQueen();
-                temp->queens[i][0] = this->queens[i][0];
-                temp->queens[i][1] = this->queens[i][1];
-                temp->nQueens = this->nQueens;
-                temp->parent = this;
-            }
-        }
-        return temp;
-    }
+    Board *children[6];
+    bool visited;
 };
 
-
-int BFS(Board *root); //returns number of soltuions.
 
 
 int main() {
 
     //TODO see if you even need the squares class
     auto *root = new Board;
-    auto *token = new Board;
 
     root = root->treeSetUp();
 
-    token = root;
-    /*
-    for(int i = 0; i < root->getSize(); i++){
-        token->printChild();
-        token = token->nextGen(3);
-    }*/
 
-    token = token->nextGen(1);
-    token = token->nextGen(3);
-    token = token->nextGen(0);
-    std::cout << "1 = true, 0 = false." << std::endl;
-    std::cout << token->isGoal() << std::endl;
-    token->printBoard();
-
-    token = token->nextGen(2);
-    std::cout << token->isGoal() << std::endl;
-    token->printBoard();
-
-
+    std::cout << "Number of solutions for n = " << root->getSize() << " is: " << root->BFS(root) << std::endl;
     return 0;
 }
 
-
-
-int BFS(Board *root){
-    //TODO
-    return 0;
-}
 
 
 
