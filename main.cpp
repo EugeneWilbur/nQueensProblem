@@ -1,6 +1,7 @@
 #include <iostream>
 #include <list>
 #include <queue>
+#include <ctime>
 
 class Board{
 public:
@@ -49,26 +50,23 @@ public:
             delete queens;
         }
         delete [] queens;
+        for(int i = 0; i < n; i++){
+            delete children;
+        }
+        delete [] children;
     }
 
-    Board* createChild(){
-        auto *temp = new Board(n);
+    void addChild(){
+        if(children[nChildren] == nullptr && nChildren < n) {
+            auto *temp = new Board(n);
 
-        //copies the queens the parent has into the child
-
-        for(int i = 0; i < nQueens; i++){
-            if(this->queens[i][0] >= 0 && this->queens[i][1] >= 0) {
+            //copies the queens the parent has into the child
+            for (int i = 0; i < nQueens; i++) {
                 temp->queens[i][0] = this->queens[i][0];
                 temp->queens[i][1] = this->queens[i][1];
                 temp->nQueens = this->nQueens;
             }
-        }
-        return temp;
-    }
-
-    void addChild(){
-        if(children[nChildren] == nullptr && nChildren <= n) {
-            children[nChildren] = createChild();
+            children[nChildren] = temp;
             nChildren++;
         }
     }
@@ -89,24 +87,29 @@ public:
 
     //recursively sets up each child to have n number of children. This is repeated n times.
     Board* treeSetUp(int depth = 0){
-        //TODO make this not bother if the path is in the wrong direction.
         if(depth == n) {
             //returns the 'youngest' generation of children
             return this;
         }
-        for(int i = 0; i < n; i++){
-            this->addChild();
-            this->addQueenToChild(i, depth, i);
-            //calls this function again for each child
-            this->children[i]->treeSetUp(depth+1);
+        if(this->isGoal()){
+            for(int i = 0; i < n; i++){
+                this->addChild();
+                this->addQueenToChild(i, depth, i);
+                //calls this function again for each child
+                this->children[i]->treeSetUp(depth+1);
+            }
+        } else {
+            return this;
         }
+
         //returns the root of the whole data struct.
         return this;
     }
 
     bool isGoal(){
-        for(int i = 0; i < nQueens; i++){
-            for(int j = i; j < nQueens; j++){
+
+        for(int i = 0; i < this->nQueens; i++){
+            for(int j = i; j < this->nQueens; j++){
                 //if qi[x coordinate] == qj[x coordinate] return false;
                 //if qi[y coordinate] == qj[y coordinate] return false;
                 //if qi[x]-qj[x] == qi[y] - qj[y] they are on the same diagonal, return false;
@@ -118,8 +121,9 @@ public:
         return true;
     }
 
-    int BFS(Board *root){
-        int solutions = 0, isGoalAns;
+    double BFS(Board *root){
+        double solutions = 0;
+        int isGoalAns;
         std::queue<Board*> frontier;
         Board *current, *temp;
 
@@ -128,13 +132,13 @@ public:
             current = frontier.front();
             frontier.pop();
             current->visited = true;
-            for(int i = 0; i < nChildren; i++){
+            for(int i = 0; i < current->nChildren; i++){
                 if(!current->children[i]->visited){
                     if (current->children[i]->nQueens != n){
                         frontier.push(current->children[i]);
-                    } else if(current->children[i]->isGoal()){
+                    } else if(current->children[i]->isGoal() && current->children[i]->nQueens == n){
                         if(n < 7){
-                            current->children[i]->printBoard();
+                            //current->children[i]->printBoard();
                         }
                         solutions++;
                     }
@@ -155,12 +159,21 @@ private:
 
 
 int main() {
-    for(int i = 0; i < 8; i++){
+    clock_t start_t, end_t;
+    double cpu_time_used;
+
+    start_t = clock();
+    for(int i = 0; i < 10; i++){
+
         auto *root = new Board(i);
         root = root->treeSetUp();
 
         std::cout << "Number of solutions for n = " << root->getSize() << " is: " << root->BFS(root) << std::endl;
     }
+    end_t = clock();
+    cpu_time_used = ((double) (end_t - start_t)) / CLOCKS_PER_SEC;
+
+    std::cout << "Time taken: " << cpu_time_used << std::endl;
     return 0;
 }
 
