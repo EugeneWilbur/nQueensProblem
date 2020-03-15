@@ -51,10 +51,6 @@ public:
         delete [] queens;
     }
 
-    int getnQueens(){
-        return nQueens;
-    }
-
     Board* createChild(){
         auto *temp = new Board(n);
 
@@ -109,7 +105,6 @@ public:
     }
 
     bool isGoal(){
-
         for(int i = 0; i < nQueens; i++){
             for(int j = i; j < nQueens; j++){
                 //if qi[x coordinate] == qj[x coordinate] return false;
@@ -138,7 +133,9 @@ public:
                     if (current->children[i]->nQueens != n){
                         frontier.push(current->children[i]);
                     } else if(current->children[i]->isGoal()){
-                        //current->children[i]->printBoard();
+                        if(n < 7){
+                            current->children[i]->printBoard();
+                        }
                         solutions++;
                     }
                 }
@@ -158,7 +155,7 @@ private:
 
 
 int main() {
-    for(int i = 4; i < 8; i++){
+    for(int i = 0; i < 8; i++){
         auto *root = new Board(i);
         root = root->treeSetUp();
 
