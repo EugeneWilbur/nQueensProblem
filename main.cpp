@@ -2,6 +2,7 @@
 #include <list>
 #include <queue>
 #include <ctime>
+#include <vector>
 
 class Board{
 public:
@@ -34,14 +35,11 @@ public:
     //init n*n board of 2d Squares by
     explicit Board(int N){
         n = N;
-        children = new Board*[n];
         queens = new int*[n];
         for(int i = 0; i < n; i++){
             queens[i] = new int[2] {-1, -1};
-            children[i] = nullptr;
         }
         nQueens = 0;
-        nChildren = 0;
         visited = false;
     }
 
@@ -50,14 +48,10 @@ public:
             delete queens;
         }
         delete [] queens;
-        for(int i = 0; i < n; i++){
-            delete children;
-        }
-        delete [] children;
     }
 
     void addChild(){
-        if(children[nChildren] == nullptr && nChildren < n) {
+        if(this->children.size() < n) {
             auto *temp = new Board(n);
 
             //copies the queens the parent has into the child
@@ -66,8 +60,7 @@ public:
                 temp->queens[i][1] = this->queens[i][1];
                 temp->nQueens = this->nQueens;
             }
-            children[nChildren] = temp;
-            nChildren++;
+            children.push_back(temp);
         }
     }
 
@@ -78,7 +71,7 @@ public:
     }
 
     void addQueenToChild(int child, int queenX, int queenY){
-        if(child <= nChildren){
+        if(child <= this->children.size()){
             children[child]->addQueen(queenX, queenY);
         } else {
             std::cout << "No child at index: " << child << std::endl;
@@ -91,23 +84,22 @@ public:
             //returns the 'youngest' generation of children
             return this;
         }
-        if(this->isGoal()){
-            for(int i = 0; i < n; i++){
-                this->addChild();
-                this->addQueenToChild(i, depth, i);
+        for(int i = 0; i < n; i++){
+            this->addChild();
+            this->addQueenToChild(i, depth, i);
+            //since isGoal checks for nQueens currently on the board, it can also tell us if the current node
+            //is on the right track. If it is on the right track (has no clashing queens) it can have children.
+            if(this->children[i]->isGoal()){
                 //calls this function again for each child
                 this->children[i]->treeSetUp(depth+1);
             }
-        } else {
-            return this;
         }
-
         //returns the root of the whole data struct.
         return this;
     }
 
-    bool isGoal(){
 
+    bool isGoal(){
         for(int i = 0; i < this->nQueens; i++){
             for(int j = i; j < this->nQueens; j++){
                 //if qi[x coordinate] == qj[x coordinate] return false;
@@ -132,7 +124,7 @@ public:
             current = frontier.front();
             frontier.pop();
             current->visited = true;
-            for(int i = 0; i < current->nChildren; i++){
+            for(int i = 0; i < current->children.size(); i++){
                 if(!current->children[i]->visited){
                     if (current->children[i]->nQueens != n){
                         frontier.push(current->children[i]);
@@ -150,9 +142,9 @@ public:
 
 private:
     int n;
-    int nQueens, nChildren; // number of queens and children in the current board state.
+    int nQueens; // number of queens and children in the current board state.
     int **queens; //position of each queen.
-    Board **children;
+    std::vector<Board*> children;
     bool visited;
 };
 
@@ -163,17 +155,19 @@ int main() {
     double cpu_time_used;
 
     start_t = clock();
-    for(int i = 0; i < 10; i++){
+    for(int i = 0; i < 13; i++){
 
         auto *root = new Board(i);
         root = root->treeSetUp();
 
         std::cout << "Number of solutions for n = " << root->getSize() << " is: " << root->BFS(root) << std::endl;
-    }
-    end_t = clock();
-    cpu_time_used = ((double) (end_t - start_t)) / CLOCKS_PER_SEC;
+        end_t = clock();
+        cpu_time_used = ((double) (end_t - start_t)) / CLOCKS_PER_SEC;
 
-    std::cout << "Time taken: " << cpu_time_used << std::endl;
+        std::cout << "Time taken: " << cpu_time_used << std::endl;
+    }
+
+
     return 0;
 }
 
