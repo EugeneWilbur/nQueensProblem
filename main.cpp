@@ -113,13 +113,13 @@ public:
         return true;
     }
 
-    double BFS(Board *root){
+    double BFS(){
         double solutions = 0;
         int isGoalAns;
         std::queue<Board*> frontier;
         Board *current, *temp;
 
-        frontier.push(root);
+        frontier.push(this);
         while(!frontier.empty()){
             current = frontier.front();
             frontier.pop();
@@ -140,6 +140,10 @@ public:
         return solutions;
     }
 
+    void hillClimbSearch(){
+
+    }
+
 private:
     int n;
     int nQueens; // number of queens and children in the current board state.
@@ -154,13 +158,12 @@ int main() {
     clock_t start_t, end_t;
     double cpu_time_used;
 
-    start_t = clock();
     for(int i = 0; i < 13; i++){
 
         auto *root = new Board(i);
         root = root->treeSetUp();
-
-        std::cout << "Number of solutions for n = " << root->getSize() << " is: " << root->BFS(root) << std::endl;
+        start_t = clock();
+        std::cout << "Number of solutions for n = " << root->getSize() << " is: " << root->BFS() << std::endl;
         end_t = clock();
         cpu_time_used = ((double) (end_t - start_t)) / CLOCKS_PER_SEC;
 
