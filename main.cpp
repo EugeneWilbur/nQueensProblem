@@ -89,7 +89,7 @@ public:
             this->addQueenToChild(i, depth, i);
             //since isGoal checks for nQueens currently on the board, it can also tell us if the current node
             //is on the right track. If it is on the right track (has no clashing queens) it can have children.
-            if(this->children[i]->isGoal()){
+            if(this->children[i]->eval() == 0){
                 //calls this function again for each child
                 this->children[i]->treeSetUp(depth+1);
             }
@@ -98,20 +98,25 @@ public:
         return this;
     }
 
-
-    bool isGoal(){
+    // Returns number of queen clashes, 0 means no queens clashing for current nQueens.
+    int eval(){
+        if(this->nQueens != n){
+            return n + (n - this->nQueens);
+        }
+        int clashes = 0;
         for(int i = 0; i < this->nQueens; i++){
             for(int j = i; j < this->nQueens; j++){
                 //if qi[x coordinate] == qj[x coordinate] return false;
                 //if qi[y coordinate] == qj[y coordinate] return false;
                 //if qi[x]-qj[x] == qi[y] - qj[y] they are on the same diagonal, return false;
                 if((queens[i][0] == queens[j][0] || queens[i][1] == queens[j][1] || abs(queens[i][0] - queens[j][0]) == abs(queens[i][1] - queens[j][1])) && i != j) {
-                    return false;
+                    clashes++;
                 }
             }
         }
-        return true;
+        return clashes;
     }
+
 
     double BFS(){
         double solutions = 0;
@@ -128,7 +133,7 @@ public:
                 if(!current->children[i]->visited){
                     if (current->children[i]->nQueens != n){
                         frontier.push(current->children[i]);
-                    } else if(current->children[i]->isGoal() && current->children[i]->nQueens == n){
+                    } else if(current->children[i]->eval() == 0 && current->children[i]->nQueens == n){
                         if(n < 7){
                             //current->children[i]->printBoard();
                         }
@@ -141,7 +146,24 @@ public:
     }
 
     void hillClimbSearch(){
+        auto * current = this;
+        int evalVal, bestOfGenIndex = 0;
+        while(true){
+            bestOfGenIndex = 0;
+            for(int i = 0 ; i < current->children.size(); i++){
+                evalVal = children[i]->eval();
 
+                if(evalVal >= current->eval()){
+                    current->printBoard();
+                    return;
+                }
+                if(evalVal < children[bestOfGenIndex]->eval()){
+                    bestOfGenIndex = i;
+                }
+            }
+            std::cout << bestOfGenIndex << current->children.size();
+            current = current->children[bestOfGenIndex];
+        }
     }
 
 private:
@@ -158,12 +180,13 @@ int main() {
     clock_t start_t, end_t;
     double cpu_time_used;
 
-    for(int i = 0; i < 13; i++){
+    for(int i = 1; i < 13; i++){
 
         auto *root = new Board(i);
         root = root->treeSetUp();
         start_t = clock();
-        std::cout << "Number of solutions for n = " << root->getSize() << " is: " << root->BFS() << std::endl;
+        std::cout << "The solution for n = " << root->getSize() << " is: " << std::endl;
+        root->hillClimbSearch();
         end_t = clock();
         cpu_time_used = ((double) (end_t - start_t)) / CLOCKS_PER_SEC;
 
