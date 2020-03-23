@@ -100,14 +100,12 @@ public:
         std::queue<Board*> frontier;
         bool first = true;
         auto current = this;
-        auto old = current;
 
         frontier.push(current);
         if(current->eval() == 0){
             solutions++;
         }
         while(!frontier.empty()){
-            old = current;
             current = frontier.front();
             frontier.pop();
             current->visited = true;
