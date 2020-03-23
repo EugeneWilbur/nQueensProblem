@@ -3,7 +3,7 @@
 #include <queue>
 #include <ctime>
 #include <vector>
-
+#include <cmath>
 
 
 class Board{
@@ -90,9 +90,8 @@ public:
         int clashes = 0;
         for(int i = 0; i < n; i++){
             for(int j = i; j < n; j++){
-                //if qi[x coordinate] == qj[x coordinate] return false;
-                //if qi[y coordinate] == qj[y coordinate] return false;
-                //if qi[x]-qj[x] == qi[y] - qj[y] they are on the same diagonal, return false;
+                //q[i] = x, i = y value.
+                //if q1[x]-q2[x] == q1[y] - q2[y] they are on the same diagonal, add a clash;
                 if((queens[i] == queens[j] || abs(queens[i] - queens[j]) == abs(i - j)) && i != j) {
                     clashes++;
                 }
@@ -113,7 +112,7 @@ public:
             current = frontier.front();
             frontier.pop();
             current->visited = true;
-            current->printBoard();
+            //current->printBoard();
             for(int i = 0; i < current->children.size(); i++){
                 if(!current->children[i]->visited){
                     frontier.push(current->children[i]);
@@ -158,6 +157,48 @@ public:
         }
     }
 
+
+    void simulatedAnnealing(){
+        std::cout << "Searching now" << std::endl;
+        auto * current = this;
+        Board * next = nullptr;
+        srand(time(nullptr));
+        double t = 1, tMin = 0.00001, a = 0.999;
+        double probRate, rnum;
+        int childrensAngryQueens;
+
+
+
+        int evalVal, bestOfGenIndex = 0;
+        while(t > tMin){
+            for(int i = 0; i < n; i++){
+                int angryQueens = current->eval();
+                if(angryQueens == 0){
+                    current->printBoard();
+                    return;
+                }
+                if(current->children.empty()) {
+                    current = this;
+                }
+
+                next = current->children[rand() % current->children.size()];
+
+                childrensAngryQueens = next->eval();
+
+                probRate = exp(-(angryQueens - childrensAngryQueens)/t);
+                rnum = ((double) rand() / (RAND_MAX));
+
+               // std::cout << probRate << " " << num << std::endl;
+
+                if(childrensAngryQueens < angryQueens || probRate > rnum){
+                    current = next;
+                }
+            }
+            t *= a;
+        }
+
+    }
+
 private:
     int n;
     std::vector<int> queens; //position of each queen. (i:x position [i]:y position)
@@ -172,7 +213,7 @@ int main() {
     double cpu_time_used;
 
 
-    for(int i = 4; i < 10; i++){
+    for(int i = 4; i < 9; i++){
 
         auto *root = new Board(i);
         root = root->treeSetUp();
@@ -180,7 +221,8 @@ int main() {
         start_t = clock();
 
         std::cout << "The solution for n = " << root->getSize() << " is: " << std::endl;
-        root->hillClimbSearch();
+        std::cout << root->BFS() << std::endl;
+        //root->simulatedAnnealing();
 
 
         end_t = clock();
