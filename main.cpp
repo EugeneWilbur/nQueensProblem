@@ -38,15 +38,17 @@ public:
     explicit Board(int N){
         n = N;
         visited = false;
-
+        gen = 0;
 
         for(int i = 0; i < n; i++){
             queens.push_back(0);
         }
     }
 
+    ~Board() = default;
 
-    void addChild(){
+
+    void addChild(int x, int y){
         if(this->children.size() < n) {
             auto *temp = new Board(n);
 
@@ -54,35 +56,24 @@ public:
             for (int i = 0; i < n; i++) {
                 temp->queens[i] = this->queens[i];
             }
+            temp->queens[x] = y;
+            temp->gen = this->gen + 1;
             this->children.push_back(temp);
         }
     }
 
-    void addQueen(int x, int y){
-        queens[x] = y;
-    }
-
-    void addQueenToChild(int child, int queenX, int queenY){
-        if(child <= this->children.size()){
-            children[child]->addQueen(queenX, queenY);
-        } else {
-            std::cout << "No child at index: " << child << std::endl;
-        }
-    }
-
     //recursively sets up each child to have n number of children. This is repeated n times.
-    Board* treeSetUp(int depth = 0){
-        if(depth == n) {
-            //returns the 'youngest' generation of children
-            return this;
-        }
+    void nextGen(){
+        std::cout << this->gen << std::endl;
+        bool first = true;
         for(int i = 0; i < n; i++){
-            this->addChild();
-            this->addQueenToChild(i, depth, i);
-            this->children[i]->treeSetUp(depth+1);
+            if(first){
+                this->addChild(this->gen, i);
+                first = false;
+            }
+            this->addChild(this->gen, i + 1);
+            this->children[i]->printBoard();
         }
-        //returns the root of the whole data struct.
-        return this;
     }
 
     // Returns number of queen clashes, 0 means no queens clashing for current nQueens.
@@ -105,13 +96,16 @@ public:
         double solutions = 0;
         int isGoalAns;
         std::queue<Board*> frontier;
-        Board *current, *temp;
+        Board* current;
 
         frontier.push(this);
         while(!frontier.empty()){
             current = frontier.front();
             frontier.pop();
             current->visited = true;
+            if(current->gen < n){
+                current->nextGen();
+            }
             //current->printBoard();
             for(int i = 0; i < current->children.size(); i++){
                 if(!current->children[i]->visited){
@@ -124,6 +118,7 @@ public:
                     }
                 }
             }
+            //delete  current;
         }
         return solutions;
     }
@@ -200,7 +195,7 @@ public:
     }
 
 private:
-    int n;
+    int n, gen;
     std::vector<int> queens; //position of each queen. (i:x position [i]:y position)
     std::vector<Board*> children; // A vector of pointers to n number of children for each node
     bool visited;
@@ -213,10 +208,9 @@ int main() {
     double cpu_time_used;
 
 
-    for(int i = 4; i < 9; i++){
+    for(int i = 5; i < 6; i++){
 
         auto *root = new Board(i);
-        root = root->treeSetUp();
 
         start_t = clock();
 
