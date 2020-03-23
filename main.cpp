@@ -6,6 +6,7 @@
 #include <cmath>
 
 
+
 class Board{
 public:
     int getSize(){
@@ -63,21 +64,23 @@ public:
     }
 
     //recursively sets up each child to have n number of children. This is repeated n times.
-    void nextGen(){
-        std::cout << this->gen << std::endl;
-        bool first = true;
+    void nextGen(bool first){
         for(int i = 0; i < n; i++){
             if(first){
+                if(i+1 < n){
+                    this->addChild(this->gen, i + 1);
+                }
+            } else {
                 this->addChild(this->gen, i);
-                first = false;
             }
-            this->addChild(this->gen, i + 1);
-            this->children[i]->printBoard();
         }
     }
 
     // Returns number of queen clashes, 0 means no queens clashing for current nQueens.
     int eval(){
+        if(n == 0){
+            return 1;
+        }
         int clashes = 0;
         for(int i = 0; i < n; i++){
             for(int j = i; j < n; j++){
@@ -91,20 +94,25 @@ public:
         return clashes;
     }
 
-
     double BFS(){
         double solutions = 0;
         int isGoalAns;
         std::queue<Board*> frontier;
-        Board* current;
+        Board* current = this;
+        bool first = true;
 
         frontier.push(this);
+        if(current->eval() == 0){
+            current->printBoard();
+            solutions++;
+        }
         while(!frontier.empty()){
             current = frontier.front();
             frontier.pop();
             current->visited = true;
             if(current->gen < n){
-                current->nextGen();
+                current->nextGen(first);
+                first = false;
             }
             //current->printBoard();
             for(int i = 0; i < current->children.size(); i++){
@@ -118,10 +126,11 @@ public:
                     }
                 }
             }
-            //delete  current;
+            current->~Board();
         }
         return solutions;
     }
+
 
     void hillClimbSearch(){
         auto * current = this;
@@ -154,7 +163,6 @@ public:
 
 
     void simulatedAnnealing(){
-        std::cout << "Searching now" << std::endl;
         auto * current = this;
         Board * next = nullptr;
         srand(time(nullptr));
@@ -202,27 +210,26 @@ private:
 };
 
 
-
 int main() {
     clock_t start_t, end_t;
     double cpu_time_used;
 
 
-    for(int i = 5; i < 6; i++){
-
+    for(int i = 0; i < 10; i++){
         auto *root = new Board(i);
 
         start_t = clock();
 
         std::cout << "The solution for n = " << root->getSize() << " is: " << std::endl;
         std::cout << root->BFS() << std::endl;
-        //root->simulatedAnnealing();
+       // root->hillClimbSearch();
+       // root->simulatedAnnealing();
 
 
         end_t = clock();
         cpu_time_used = ((double) (end_t - start_t)) / CLOCKS_PER_SEC;
-
         std::cout << "Time taken: " << cpu_time_used << std::endl;
+
     }
 
 
