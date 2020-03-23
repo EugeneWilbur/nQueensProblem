@@ -98,15 +98,16 @@ public:
         double solutions = 0;
         int isGoalAns;
         std::queue<Board*> frontier;
-        Board* current = this;
         bool first = true;
+        auto current = this;
+        auto old = current;
 
-        frontier.push(this);
+        frontier.push(current);
         if(current->eval() == 0){
-            current->printBoard();
             solutions++;
         }
         while(!frontier.empty()){
+            old = current;
             current = frontier.front();
             frontier.pop();
             current->visited = true;
@@ -126,7 +127,6 @@ public:
                     }
                 }
             }
-            current->~Board();
         }
         return solutions;
     }
