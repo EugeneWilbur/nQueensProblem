@@ -50,7 +50,7 @@ public:
 
 
     void addChild(int x, int y){
-        if(this->children.size() < n) {
+        if(this->children.size() < n ) {
             auto *temp = new Board(n);
 
             //copies the queens the parent has into the child
@@ -59,21 +59,38 @@ public:
             }
             temp->queens[x] = y;
             temp->gen = this->gen + 1;
+            temp->printBoard();
             this->children.push_back(temp);
         }
     }
 
     //recursively sets up each child to have n number of children. This is repeated n times.
-    void nextGen(bool first){
+    Board* nextGen(bool &first){
+        std::cout << "new" << std::endl;
+        auto *temp = this;
         for(int i = 0; i < n; i++){
             if(first){
                 if(i+1 < n){
-                    this->addChild(this->gen, i + 1);
+                    temp->addChild(this->gen, i + 1);
                 }
             } else {
-                this->addChild(this->gen, i);
+                temp->addChild(this->gen, i);
             }
         }
+        return temp;
+    }
+
+    Board* graphSetUp(bool &first){
+        auto *temp = this;
+        if(temp->gen < n){
+            temp = temp->nextGen(first);
+            first = false;
+            for(int i = 0; i < temp->children.size(); i++){
+                temp->children[i] = temp->children[i]->graphSetUp(first);
+            }
+
+        }
+        return temp;
     }
 
     // Returns number of queen clashes, 0 means no queens clashing for current nQueens.
@@ -98,23 +115,16 @@ public:
         double solutions = 0;
         int isGoalAns;
         std::queue<Board*> frontier;
-        bool first = true;
         auto current = this;
-        auto old = current;
 
         frontier.push(current);
         if(current->eval() == 0){
             solutions++;
         }
         while(!frontier.empty()){
-            old = current;
             current = frontier.front();
             frontier.pop();
             current->visited = true;
-            if(current->gen < n){
-                current->nextGen(first);
-                first = false;
-            }
             //current->printBoard();
             for(int i = 0; i < current->children.size(); i++){
                 if(!current->children[i]->visited){
@@ -211,13 +221,26 @@ private:
 
 
 int main() {
+    bool first = true;
     clock_t start_t, end_t;
     double cpu_time_used;
 
+    /*
+    auto * root = new Board(4);
+    root->printBoard();
 
-    for(int i = 0; i < 10; i++){
+    for(int k = 0; k < 16; k++) {
+        for (int i = 0; i < 4; i++) {
+            for (int j = 1; j < 4; j++) {
+                root->addChild(i, j);
+            }
+        }
+    }
+*/
+
+    for(int i = 4; i < 5; i++){
         auto *root = new Board(i);
-
+        root->graphSetUp(first);
         start_t = clock();
 
         std::cout << "The solution for n = " << root->getSize() << " is: " << std::endl;
@@ -231,7 +254,6 @@ int main() {
         std::cout << "Time taken: " << cpu_time_used << std::endl;
 
     }
-
 
 
     return 0;
