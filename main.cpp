@@ -9,10 +9,6 @@
 
 class Board{
 public:
-    int getSize(){
-        return n;
-    }
-
     //prints current board state (for debugging and visualisation mostly).
     void printBoard(){
         std::cout << "\n    ";
@@ -45,6 +41,11 @@ public:
             queens.push_back(0);
         }
     }
+
+    Board(Board const & that) = default;
+    Board(Board && that) noexcept = default;
+    Board & operator = (Board const & that) noexcept = default;
+    Board & operator = (Board && that) noexcept = default;
 
     ~Board() = default;
 
@@ -94,32 +95,34 @@ public:
         return clashes;
     }
 
+    //returns total number of goal states found.
     double BFS(){
         double solutions = 0;
-        int isGoalAns;
         std::queue<Board*> frontier;
         bool first = true;
         auto current = this;
 
-        frontier.push(current);
-        if(current->eval() == 0){
+
+        frontier.push(current); //push root onto queue to start BFS.
+        if(current->eval() == 0){ // check if initial condition is a goal state.
             solutions++;
         }
-        while(!frontier.empty()){
-            current = frontier.front();
+        while(!frontier.empty()){ //while we have nodes left to search
+            current = frontier.front(); //pop the oldest node off the queue.
             frontier.pop();
-            current->visited = true;
+            current->visited = true; //make sure we dont check this node again.
+
             if(current->gen < n){
-                current->nextGen(first);
-                first = false;
+                current->nextGen(first); //create children for the current node as we are going to need to check them.
+                first = false; //just a variable to check if we are passing in the I.C or not.
             }
-            //current->printBoard();
-            for(int i = 0; i < current->children.size(); i++){
-                if(!current->children[i]->visited){
+
+            for(int i = 0; i < current->children.size(); i++){ //go through all children of the current node.
+                if(!current->children[i]->visited){ //if we haven't visited those children add them too queue.
                     frontier.push(current->children[i]);
-                    if(current->children[i]->eval() == 0){
+                    if(current->children[i]->eval() == 0){  // if child is goal state increase number of solutions.
                         if(n < 7){
-                            //current->children[i]->printBoard();
+                            current->children[i]->printBoard(); //if n < 7 print the current solution.
                         }
                         solutions++;
                     }
@@ -129,23 +132,27 @@ public:
         return solutions;
     }
 
-
+    //prints goal state if found, prints failure if not found.
     void hillClimbSearch(){
         auto * current = this;
         int evalVal, bestOfGenIndex = 0;
+
         while(true){
-            if(current->eval() == 0 || current->children.empty()) {
-                current->printBoard();
+            if(current->eval() == 0 || current->children.empty()) { //if goal state found or no more nodes we are going to stop
+                if(!current->children.empty()){
+                    current->printBoard(); //print solution
+                } else {
+                    std::cout << "Hill climb failed. Try again. " << std::endl; //ran out of nodes in hill climb.
+                }
                 return;
             }
-            bestOfGenIndex = 0;
-            for(int i = 1; i < current->children.size(); i++){
-                //evalVal saves me calling eval() multiple times.
-                evalVal = current->children[i]->eval();
+            bestOfGenIndex = 0; //reset, so we can find the best of the next lot of children to be checked.
+            for(int i = 1; i < current->children.size(); i++){ // go through all children (expect first, because first
+                //                                                  is a duplicate of the parent.
+                evalVal = current->children[i]->eval(); //evalVal saves me calling eval() multiple times.
 
                 //keep track of which of the children are best, so we can explore that node next.
                 if(evalVal < current->children[bestOfGenIndex]->eval()){
-
                     bestOfGenIndex = i;
                 }
             }
@@ -163,48 +170,56 @@ public:
     void simulatedAnnealing(){
         auto * current = this;
         Board * next = nullptr;
+
         srand(time(nullptr));
-        double t = 1, tMin = 0.00001, a = 0.999;
+        double t = 1, tMin = 0.000000001, a = 0.999;
         double probRate, rnum;
-        int childrensAngryQueens;
+        int childrensAngryQueens, angryQueens; //number of clashing pairs of queens for child and current node.
 
 
-
-        int evalVal, bestOfGenIndex = 0;
         while(t > tMin){
             for(int i = 0; i < n; i++){
-                int angryQueens = current->eval();
-                if(angryQueens == 0){
+                angryQueens = current->eval(); // angryQueens is set to the number of clashing pairs of queens for current
+                if(angryQueens == 0){ //if no clashing pairs, goal state is found, print goal state.
                     current->printBoard();
                     return;
                 }
+
+                //if we go to deep into the tree, this reset us back to the top. We keep going through the tree
+                // until either goal state is found, or our pre set condition is met (t has reduced to far).
                 if(current->children.empty()) {
                     current = this;
                 }
 
-                next = current->children[rand() % current->children.size()];
+                next = current->children[rand() % current->children.size()]; // pick a random child.
+                childrensAngryQueens = next->eval(); // find childs number of clashing queens.
 
-                childrensAngryQueens = next->eval();
+                // probRate is a value that is always between 1-0 (at least for the conditions we need it, e.g. when
+                // childrensAngryQueens is greater than angryQueens). The higher the number, the higher the chance we
+                // 'turn around' and take a larger clashing queens value.
 
-                probRate = exp(-(angryQueens - childrensAngryQueens)/t);
+                // This value is smaller the bigger the difference in the number of clashing queens. This value also
+                // becomes smaller and smaller as t reduces.
+
+                // This results in us sometimes going to the next node even if it is bigger. But the chance of this
+                // happening is reduced the bigger the gap in number of queens and the longer we explore the graph.
+                probRate = (double)exp(-(childrensAngryQueens - angryQueens)/t);
                 rnum = ((double) rand() / (RAND_MAX));
 
-                // std::cout << probRate << " " << num << std::endl;
-
                 if(childrensAngryQueens < angryQueens || probRate > rnum){
-                    current = next;
+                    current = next; // go to next node if it has less than
                 }
             }
-            t *= a;
+            t *= a; // decrease t.
         }
-
+        std::cout << "Simulated Annealing failed. Try again." << std::endl;
     }
 
 private:
-    int n, gen;
+    int n, gen; // n is size of the board. gen is depth in the tree.
     std::vector<int> queens; //position of each queen. (i:x position [i]:y position)
     std::vector<Board*> children; // A vector of pointers to n number of children for each node
-    bool visited;
+    bool visited; //just to keep track of if we have visited it in bfs.
 };
 
 
@@ -213,21 +228,38 @@ int main() {
     double cpu_time_used;
 
 
-    for(int i = 0; i < 10; i++){
+    for(int i = 7; i < 10; i++){
         auto *root = new Board(i);
 
+        root->BFS();
+
+        /*
         start_t = clock();
 
-        std::cout << "The solution for n = " << root->getSize() << " is: " << std::endl;
-        std::cout << root->BFS() << std::endl;
-        // root->hillClimbSearch();
-        // root->simulatedAnnealing();
-
+        std::cout << "The solution for n = " << i << " is: " << std::endl << std::endl;
+        std::cout << "BFS: " << root->BFS() << std::endl;
 
         end_t = clock();
         cpu_time_used = ((double) (end_t - start_t)) / CLOCKS_PER_SEC;
-        std::cout << "Time taken: " << cpu_time_used << std::endl;
+        std::cout << "BFS: " << cpu_time_used << std::endl << std::endl;
 
+        start_t = clock();
+
+        root->hillClimbSearch();
+
+        end_t = clock();
+        cpu_time_used = ((double) (end_t - start_t)) / CLOCKS_PER_SEC;
+        std::cout << "Hill Climb: " << cpu_time_used << std::endl << std::endl;
+*/
+        start_t = clock();
+
+        root->simulatedAnnealing();
+
+        end_t = clock();
+        cpu_time_used = ((double) (end_t - start_t)) / CLOCKS_PER_SEC;
+        std::cout << "SA: " << cpu_time_used << std::endl << std::endl << std::endl;
+
+        delete root;
     }
 
 
